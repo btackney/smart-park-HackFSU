@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en" ng-app>
+  <head>
+    <title>Smart Park</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    	<!-- Latest compiled and minified CSS -->
+	  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+          integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+          crossorigin="anonymous"></script>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/angular.min.js"></script>
+    <style>
+    body {
+      padding-top: 60px;
+    }
+    
+    #user-input {
+      margin-top:3em;
+      height: 3em;
+    }
+    
+    #user-input div input{
+      display: block;
+      margin-left:auto;
+      margin-right:auto;
+      background-color:lightgrey;
+    }
+    
+      #user-input div input:focus{
+        background-color:white;
+      }
+    
+    #user-button > button {
+      margin-top:4.3em;
+      height: 5em;
+    }
+    
+    #user-button button, #user-reset button {
+      display: block;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    #thank-you span{
+      display: block;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    .page-header .well {
+      margin-top:-7.5em;
+      color:white;
+      Background-color:#337ab7;
+      padding-bottom: 0.2em;
+    }
+    
+    .thumbnail {
+      margin-right:-18em;
+      margin-left:13em;
+    }
+    
+    #my-account {
+      padding-top:0.002em;
+      width: 100%;
+      Background-color:#337ab7;
+      border-radius: 2em;
+    }
+    
+    #my-account:hover {
+      width: 100%;
+      Background-color:black;
+      border-radius: 2em;
+    }
+    
+    #my-account h1{
+      color:white;
+    }
+    
+    img {
+      display: block;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    
+    </style>
+    
+    
+    <script>
+          /*global io*/
+      /*global socket*/
+      $(document).ready(function(){
+        
+        /*global $*/
+        var socket = io.connect();
+        
+        var $userButton = $("#submit");
+        var $resetButton = $("#reset");
+        var $thanks = $("#thank-you");
+        
+        var $userFirstName =  $("#first");
+        var $userLastName = $("#last");
+        var $userPlate = $("#plate");
+        
+        var details = {
+          'firstName': $userFirstName,
+          'lastName': $userLastName,
+          'plate': $userPlate
+        }
+        
+        function makeDateTime(tt) {
+          var d= new Date(tt);
+          
+          var str="";
+          str=d.toDateString() + " " + d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+          return str;
+        }
+        
+        function createTable() {
+          return "<TABLE class='table table-hover'>";
+        }
+        
+        function createTableRow(isTableHead, f1,f2,f3,f4) {
+          if(isTableHead){
+            var str="<thead style='color:red;'> <tr>";
+          } else{
+            var str="<tr>";
+          }
+          str=str+"<td  width='200px'>" + f1 + "</td>" ;
+          str=str+"<td  width='200px'>" + f2 + "</td>" ;
+          str=str+"<td  width='200px'>" + f3 + "</td>" ;
+          str=str+"<td  width='200px'>" + f4 + "</td>" ;
+           if(isTableHead){
+            str=str+"</tr></thead> ";
+          } else{
+            str=str+"</tr>";
+          }
+          isTableHead = false;
+          return str;
+        }
+        
+        function createTableEnd() {
+          return "</TABLE>";
+        }
+  
+        function getDetails(){
+          details.firstName = $userFirstName.val();
+          details.lastName = $userLastName.val();
+          details.plate = $userPlate.val();
+        }
+        
+        $userButton.click(function(){
+          
+          if (($userFirstName.val() !== "") && ($userLastName.val() !== "") && ($userPlate.val() !== "")){
+          
+            $thanks.removeClass("hidden");
+            getDetails();
+            
+            $userFirstName.val('');
+            $userLastName.val('');
+            $userPlate.val('');
+            
+            /*global socket*/
+            socket.emit("userData", details);
+          }
+          
+        });
+        
+        $resetButton.click(function(){
+          
+          $userFirstName.val('');
+          $userLastName.val('');
+          $userPlate.val('');
+          
+        });
+        
+        $("#navigation li").click(function(e){
+          e.preventDefault();
+          $("#navigation li").removeClass("active");
+          $(this).addClass("active");
+        });
+        
+        $(".close").click(function(){
+          $thanks.addClass("hidden");
+            
+        });
+         
+        
+        $("#my-account").click(function(){
+            getDetails();
+            console.log(details.plate);
+            socket.emit("MY_ACCOUNT", details.plate );
+        });
+        
+        
+        
+        socket.on("USER_ACCOUNT2", function(data){
+           var isTableHead = true;
+           var ss=createTable();
+             ss=ss+createTableRow(isTableHead, "License Plate","Date and Time Last Visit","Time Elapsed","");
+               for(var i = 0; i<data.length; i++){
+                 if ((data[i].plate==$('#plate').val()) || (  $('#plate').val()==""   )) {
+                   ss=ss+createTableRow(false,data[i].plate, makeDateTime( data[i].timestamp ),(data[i].timespent/60).toFixed(1) + " mins","");
+                   
+                 }
+               }
+               ss=ss+createTableEnd();
+          //     $('#something').html(ss);
+          //     console.log(ss);
+               
+               $("#BrendanTable").html(ss);
+              
+        });        
+        
+        socket.on("USER_ACCOUNT", function(data){
+          // $('<table>'+ 
+          // '<tr>'
+          // </td><td><td></td></tr></table>').appendTo( '#BrendanTable' );
+          // for(var i = 0; i<data.length; i++){
+          //   $('<tr>'
+          //   + '<td>'+ data[i].timestamp +  '</td>'
+          //   + '<td>'+ data[i].timestamp + '</td>'
+          //   +'<tr>').append('#BrendanTable');
+          // }
+          //$('#BrendanTable tr:last').after('<tr>'+ ' data[i].timestamp</tr><tr>...</tr>');
+          // // var ss=createTable();
+          //   ss=ss+createTableRow("STATUS","DATE AND TIME","COL","COL");
+          //     for(var i = 0; i<data.length; i++){
+          //       ss=ss+createTableRow(data[i].statusLocation, makeDateTime( data[i].timestamp),"ss","tt");
+          //       console.log("@@User account: " + data[i].statusLocation, data[i].timestamp);
+          //     }
+          //     ss=ss+createTableEnd();
+          //     $('#something').html(ss);
+          //     console.log(ss);
+              
+        });
+        
+      });
+    </script>
+  </head>
+
+  <body>
+    <div class= "">
+      <div class="row">
+        <!--<div class="text-center">-->
+        <!--  <img class="thumbnail" src="img/dev-post-1.png" height="200" width="250"/>-->
+        <!--</div>-->
+          <div class="page-header">
+            <div class="well text-center">
+              <h1 style="display: inline;">Sign up for total parking convienience!</h1>
+              <a href="https://devpost.com/software/smartpark-ymauif#">
+                <img class="thumbnail" src="img/dev-post-1.png" height="100" width="125" style="display: inline;"/>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div id="thank-you" class="hidden">
+            <span class="alert alert-success alert-dismissable text-center" role="alert" aria-hidden="true">
+              <button type="button" class="close" data-dismiss="alert">&times;</button>
+              Thanks for registering with us!
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="">
+            <div id="user-input" >
+              <div class="input-group col-xs-12">
+                <input id="first" class="form-control" type="text" placeholder="* First Name" required/>
+                <input id="last" class="form-control" type="text" placeholder="* Last Name" required/>
+                <input id="plate" class="form-control" type="text" placeholder="* License Plate No." required/>
+                
+              </div>
+            </div>
+            <div id="user-button">
+              <button id="submit" class="btn btn-success btn-large btn-block" type="button">JOIN</button>
+            </div>
+            <div id="user-reset">
+              <button id="reset" class="btn btn-danger btn-large btn-block" type="button">RESET</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr/>
+      <hr/>
+      <div class="page-header">
+        <button id="my-account" class="well well-sm text-center">
+          <h1>Search Account Info</h1>
+        </button>
+      </div>
+     <div class="container">
+      <div class="row">
+        <div id="BrendanTable">
+        </div>
+       </div>
+      </div>
+      <hr/>
+   
+      <!--<div class="row">-->
+      <!--  <ul id="navigation" class="nav nav-pills nav-justified">-->
+      <!--    <li id="recent-visits-button" role="presentation" class="active" ><a href="#pillA" data-toggle="pills">Recent Visits</a></li>-->
+      <!--    <li role="presentation"><a href="#pillB" data-toggle="pills">Time In</a></li>-->
+      <!--    <li role="presentation"><a href="#pillC" data-toggle="pills">Time Out</a></li>-->
+      <!--    <li role="presentation"><a href="#pillD" data-toggle="pills">Total Time</a></li>-->
+      <!--    <li role="presentation"><a href="#pillE" data-toggle="pills">Amount Due</a></li>-->
+      <!--  </ul>-->
+      <!--  <div class="tab-content">-->
+      <!--    <div class="tab-pane active" id="pillA"></div>-->
+      <!--    <div class="tab-pane" id="pillB"></div>-->
+      <!--    <div class="tab-pane" id="pillC"></div>-->
+      <!--    <div class="tab-pane" id="pillD"></div>-->
+      <!--    <div class="tab-pane" id="pillE"></div>-->
+      <!--  </div>-->
+      <!--</div>-->
+  </body>
+</html>

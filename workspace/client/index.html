@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" ng-app>
+  <head>
+    <title>SMART PARK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
+    <style>
+      body {
+        padding-top: 60px;
+        background-color:yellow;
+      }
+    </style>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/angular.min.js"></script>
+    
+    <input type="text" PLACEHOLDER="IN OR OUT" id="camera"  />
+    <div id="parkers"></div>
+    
+    <script>
+    
+   function getParameterByName( name ){
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+function Speak(whattosay){
+    var message = new SpeechSynthesisUtterance(whattosay);
+        speechSynthesis.speak(message);
+};
+
+
+$('#camera').val(getParameterByName("INOROUT"));
+
+Speak("Configure camera location please " + getParameterByName("INOROUT"));
+    
+    var globaldata="";
+    
+     // function ChatController($scope) {
+        var socket = io.connect();
+
+
+        socket.on('connect', function () {
+         
+            /*global $*/
+            $('#body').css("background-color",'blue');         
+        });
+
+        socket.on('message', function (msg) {
+          
+        });
+        
+        socket.on("SHOW_SPACES", function(data) {
+            
+            $('#parkers').html(data + " cars in garage.");
+            
+        });
+
+        socket.on('GREEN', function(data) {
+            /*global $*/
+
+            console.log(data);
+            
+            Speak("Access Recorded " + data);
+            
+            $('#body').css("background-color",'green');
+        });
+        
+          socket.on('RED', function(data) {
+              console.log(data);
+              /*global $*/
+              $('#body').css("background-color",'red');
+        });
+
+        socket.on('roster', function (names) {
+
+        });
+
+    </script>
+    
+    <script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+</head>
+
+<style>
+#container {
+    margin: 0px auto;
+    width: 640px;
+    height: 480px;
+    border: 10px #aaa solid;
+}
+#webCam {
+    width: 640px;
+    height: 480px;
+    background-color: #666;
+}
+a, a:hover {
+    font-size: 5em;
+    text-decoration: none;
+}
+</style>
+
+<script>
+    
+    
+</script>
+
+<body id="body">
+    
+    <canvas hidden id="canvas" width=640 height=480 style="display:none;"></canvas>
+    <div id="container">
+        <video autoplay="true" id="videoElement" width=100% height=100%>
+        </video>
+    </div>
+    <br/>
+    <a HIDDEN href="user-registration.html">User Registration Page</a>
+    
+</body>
+
+<script>
+
+
+/*global $*/
+$( document ).ready(function() {
+    console.log( "ready!" );
+
+});
+
+var myVar;
+
+function myFunction() {
+    myVar = setInterval(alertFunc, 6000);
+}
+
+function alertFunc() {
+snapImage();
+}
+
+myFunction();
+
+var image = new Image();
+
+var canvas = document.querySelector('#canvas');
+var ctx = canvas.getContext('2d');
+
+function snapImage() {
+    ctx.drawImage(video,0,0,640,480);
+    image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); // here is the most important part because if you dont replace you will get a DOM 18 exception.
+    image=canvas.toDataURL('image/png', '');
+   $('#info').val(image);
+   globaldata=image;
+   console.log("emit");
+   var whichCamera = $('#camera').val();
+   if (whichCamera=="IN") $('#camera').hide();
+   if (whichCamera=="OUT") $('#camera').hide();
+   console.log(whichCamera);
+   socket.emit(whichCamera, globaldata);
+
+}
+
+var video = document.querySelector("#videoElement");
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+if (navigator.getUserMedia) {
+    navigator.getUserMedia({video: true}, handleVideo, videoError);
+}
+function handleVideo(stream) {
+    video.src = window.URL.createObjectURL(stream);
+  // if (video.src!==null)  document.querySelector("#test").src=video.src;
+}
+function videoError(e) {
+    document.write("Please enable your webcam to continue.");
+}
+
+</script>
+  </head>
+  <body>
+  </body>
+</html>
